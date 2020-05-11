@@ -41,11 +41,11 @@ app.use(async (ctx, next) => {
 });
 
 const router = new Router();
-const generateMsg = 50;
-const historyMsg = [];
-let amountMsg = 0;
+const maxMessages = 50;
+const cashedMessages = [];
+let countMessages = 0;
 
-const messageItem = {
+const broadcastMessage = {
   event: "comment",
   data: JSON.stringify({
     field: "action",
@@ -54,46 +54,46 @@ const messageItem = {
   }),
   id: uuid.v4()
 };
-historyMsg.push(messageItem);
+cashedMessages.push(broadcastMessage);
 
-const intervals = setInterval(() => {
-  const msgAction = {
+const interval = setInterval(() => {
+  const actionMessage = {
     field: "action",
     msg: "Идёт перемещение мяча по полю, игроки и той, и другой команды активно пытаются атаковать"
   };
-  const msgFreekick = {
+  const freekickMessage = {
     field: "freekick",
     msg: "Нарушение правил, будет штрафной удар"
   };
-  const msgGoal = {
-    field: "goal",
-    msg: "Отличный удар! И Г-О-Л!"
+  const goalMessage = { 
+    field: "goal", 
+    msg: "Отличный удар! И Г-О-Л!" 
   };
-  const randomMsg = [msgAction, msgFreekick, msgGoal];
+  const randomMessages = [actionMessage, freekickMessage, goalMessage];
 
-  let itemMsg = 0;
-  const itemId = uuid.v4();
-  const randomPoz = Math.floor(Math.random() * 100);
-  if (randomPoz < 10) {
-    itemMsg = 2;
-  } else if (randomPoz < 50) {
-    itemMsg = 1;
+  let shownedMessage = 0;
+  const idMessage = uuid.v4();
+  const shuffledMessage = Math.floor(Math.random() * 100);
+  if (shuffledMessage < 10) {
+    shownedMessage = 2;
+  } else if (shuffledMessage < 50) {
+    shownedMessage = 1;
   } else {
-    itemMsg = 0;
+    shownedMessage = 0;
   }
-  randomMsg[itemMsg].date = new Date();
-  randomMsg[itemMsg].id = itemId;
+  randomMessages[shownedMessage].date = new Date();
+  randomMessages[shownedMessage].id = idMessage;
 
-  const messageItem = {
+  const broadcastMessage = {
     event: "comment",
-    data: JSON.stringify(randomMsg[itemMsg]),
-    id: itemId
+    data: JSON.stringify(randomMessages[shownedMessage]),
+    id: idMessage
   };
 
-  historyMsg.push(messageItem);
+  cashedMessages.push(broadcastMessage);
 
-  amountMsg += 1;
-  if (amountMsg > generateMsg) clearInterval(intervals);
+  countMessages += 1;
+  if (countMessages > maxMessages) clearInterval(interval);
 }, 3000);
 
 router.get("/sse", async ctx => {
@@ -104,14 +104,14 @@ router.get("/sse", async ctx => {
       return [];
     },
     stream(sse) {
-      let amountMsg = 0;
+      let countMessages = 0;
       const interval = setInterval(() => {
-        if (historyMsg.length > amountMsg) {
-          sse.sendEvent(historyMsg[amountMsg]);
-          amountMsg += 1;
+        if (cashedMessages.length > countMessages) {
+          sse.sendEvent(cashedMessages[countMessages]);
+          countMessages += 1;
         }
 
-        if (amountMsg > generateMsg) clearInterval(interval);
+        if (countMessages > maxMessages) clearInterval(interval);
       }, 2000);
 
       return () => clearInterval(interval);
@@ -122,7 +122,7 @@ router.get("/sse", async ctx => {
 });
 
 router.get("/index", async ctx => {
-  ctx.response.body = "hello";
+  ctx.response.body = "get index";
 });
 
 app.use(router.routes()).use(router.allowedMethods());
